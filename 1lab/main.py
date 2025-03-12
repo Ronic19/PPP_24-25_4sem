@@ -3,7 +3,6 @@ import struct
 import socket
 import json
 from pprint import pprint
-import time
 import threading
 
 
@@ -56,7 +55,8 @@ class Server:
             self.protocol.send(client_socket, f'{self.get_dirs()}')
         elif request.split()[0] == 'SET' and len(request.split()) == 3:
             os.environ[request.split()[1]] = request.split()[2]
-            self.protocol.send(client_socket, f'Variable is set: {request.split()[1]} = {request.split()[2]}')
+            self.protocol.send(client_socket, 
+                               f'Variable is set: {request.split()[1]} = {request.split()[2]}')
         else:
             self.protocol.send(client_socket, 'Unknown command')
         client_socket.close()
@@ -66,7 +66,7 @@ class Server:
         server_socket.bind((self.host, self.port))
         server_socket.listen(1)
         while True:
-            client, addr = server_socket.accept()
+            client, _ = server_socket.accept()
             self.handle_client(client)
 
 
@@ -84,8 +84,6 @@ class Client:
         pprint(answer)
         client_socket.close()
 
-        
-
 
 def main():
     server = Server()
@@ -98,7 +96,10 @@ def main():
 
     client = Client()
 
-    print(f'Возможные команды: \n1. GET_FILE - Для получения информации об исполняемых файлас\n2. SET <VAR> <VALUE> - Для установления переменных окружения\n3. EXIT - Выход')
+    print('''Возможные команды: \n
+          1. GET_FILE - Для получения информации об исполняемых файлас\n
+          2. SET <VAR> <VALUE> - Для установления переменных окружения\n
+          3. EXIT - Выход''')
     command = input('Введите команду: ')
     while command != 'EXIT':
 
@@ -108,4 +109,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
