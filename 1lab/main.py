@@ -88,11 +88,12 @@ class Client:
 def main():
     server = Server()
 
-    ##
+    # запускаем сервер в отдельном потоке
     server_thread = threading.Thread(target=server.start_server)
+    # демонские потоки завершаются,
+    # когда завершается основная программа
     server_thread.daemon = True
     server_thread.start()
-    ##
 
     client = Client()
 
