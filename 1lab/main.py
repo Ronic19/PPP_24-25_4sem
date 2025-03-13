@@ -47,16 +47,18 @@ class Server:
         return result
 
     def save_to_json(self, dictionary, filename):
-        with open(filename, "w") as fh:
+        with open(filename, "w", encoding='utf-8') as fh:
             json.dump(dictionary, fh)
 
     def handle_client(self, client_socket):
         request = self.protocol.recv(client_socket)
         if request == 'GET_FILE':
-            self.protocol.send(client_socket, f'{self.get_dirs()}')
+            dirs = self.get_dirs()
+            self.save_to_json(dirs, "exe_files.json")
+            self.protocol.send(client_socket, f'{dirs} --> Saved to exe_files.json')
         elif request.split()[0] == 'SET' and len(request.split()) == 3:
             os.environ[request.split()[1]] = request.split()[2]
-            self.protocol.send(client_socket, 
+            self.protocol.send(client_socket,
                             f'Variable is set: {request.split()[1]} = {request.split()[2]}')
         else:
             self.protocol.send(client_socket, 'Unknown command')
@@ -105,7 +107,7 @@ def main():
     
     command = input('Введите команду: ')
     while command != 'EXIT':
-        if re.fullmatch(r'[A-Za-z _]+', command):
+        if re.fullmatch(r'[A-Za-z0-9 _]+', command):
             client.send_command(command)
         else:
             print('ERROR: Неверный формат')
