@@ -4,6 +4,7 @@ import socket
 import json
 from pprint import pprint
 import threading
+import re
 
 
 PORT = 64996
@@ -19,7 +20,8 @@ class SizeProtocol():
         connected_socket.sendall(msg.encode())
 
     def recv(self, connected_socket):
-        msg_size, = struct.unpack('I', connected_socket.recv(struct.calcsize('I')))
+        packed_size = connected_socket.recv(struct.calcsize('I'))
+        msg_size, = struct.unpack('I', packed_size)
         result = b''
         while len(result) < msg_size:
             result += connected_socket.recv(min(self.MSGSIZE, msg_size - len(result)))
@@ -36,12 +38,12 @@ class Server:
         result = {}
         paths = os.environ.get('PATH').split(os.pathsep)
 
-        for dir in paths:
-            if os.path.isdir(dir):
-                files = os.listdir(dir)  # список всех файлов в директории
-                exe_files = [f for f in files if os.access(os.path.join(dir, f), os.X_OK)]
+        for dr in paths:
+            if os.path.isdir(dr):
+                files = os.listdir(dr)  # список всех файлов в директории
+                exe_files = [f for f in files if os.access(os.path.join(dr, f), os.X_OK)]
                 if len(exe_files) != 0:
-                    result[dir] = exe_files
+                    result[dr] = exe_files
         return result
 
     def save_to_json(self, dictionary, filename):
@@ -50,13 +52,12 @@ class Server:
 
     def handle_client(self, client_socket):
         request = self.protocol.recv(client_socket)
-
         if request == 'GET_FILE':
             self.protocol.send(client_socket, f'{self.get_dirs()}')
         elif request.split()[0] == 'SET' and len(request.split()) == 3:
             os.environ[request.split()[1]] = request.split()[2]
             self.protocol.send(client_socket, 
-                               f'Variable is set: {request.split()[1]} = {request.split()[2]}')
+                            f'Variable is set: {request.split()[1]} = {request.split()[2]}')
         else:
             self.protocol.send(client_socket, 'Unknown command')
         client_socket.close()
@@ -101,10 +102,13 @@ def main():
           1. GET_FILE - Для получения информации об исполняемых файлас\n
           2. SET <VAR> <VALUE> - Для установления переменных окружения\n
           3. EXIT - Выход''')
+    
     command = input('Введите команду: ')
     while command != 'EXIT':
-
-        client.send_command(command)
+        if re.fullmatch(r'[A-Za-z _]+', command):
+            client.send_command(command)
+        else:
+            print('ERROR: Неверный формат')
         command = input('Введите команду: ')
 
 
