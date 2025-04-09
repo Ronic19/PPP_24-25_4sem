@@ -1,15 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
-from sqlalchemy import select
+from sqlalchemy import select, create_engine
 from secrets import token_hex
 
-from ..db.session import get_session, engine
-from ..models.users import UserModel, Base
+from ..db.session import get_session
+from ..models.users import UserModel
 from ..schemas.user_schema import UserLoginSchema
 
 
 router = APIRouter()
+
 
 Session = Annotated[AsyncSession, Depends(get_session)]
 
@@ -20,16 +21,16 @@ user_me = {
     }
 
 
-@router.post("/setup_db")
-async def setup_database():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
-    return {'ok': True}
+# @router.post("/setup_db")
+# async def setup_database():
+#     async with engine.begin() as conn:
+#         await conn.run_sync(Base.metadata.drop_all)
+#         await conn.run_sync(Base.metadata.create_all)
+#     return {'ok': True}
 
 
 # получение информации о всех пользователях
-@router.get("/users")
+@router.get("/users", tags=['Все пользователи 🕊️'])
 async def get_users(session: Session):
     query = select(UserModel)
     result = await session.execute(query)
@@ -37,7 +38,7 @@ async def get_users(session: Session):
     return result.scalars().all()
 
 
-@router.post("/sign-up")
+@router.post("/sign-up", tags=['Зарегистрироваться 🦜'])
 async def sign_up(data: UserLoginSchema, session: Session):
 
     query = select(UserModel).filter_by(email=data.email)
@@ -63,7 +64,7 @@ async def sign_up(data: UserLoginSchema, session: Session):
     return user_me
 
 
-@router.post("/login")
+@router.post("/login", tags=['Войти в систему 🦚'])
 async def login(data: UserLoginSchema, session: Session):
     query = select(UserModel).filter_by(email=data.email, password=data.password)
     result = await session.execute(query)
@@ -77,7 +78,7 @@ async def login(data: UserLoginSchema, session: Session):
     return user_me
 
 
-@router.get("/users/me/")
+@router.get("/users/me", tags=['Текущий пользователь 🦩'])
 def get_current_user():
     user_me_copy = user_me.copy()
     del user_me_copy['token']
