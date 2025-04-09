@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 class ImageStr(BaseModel):
     img_str: str = Field(max_length=10000000)
 
-sync_engine = create_engine("sqlite:///project/app/db/users.db") 
+sync_engine = create_engine("sqlite:///2lab/project/app/db/users.db") 
 Base.metadata.create_all(sync_engine)
 
 app = FastAPI()

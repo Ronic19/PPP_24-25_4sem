@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
-from sqlalchemy import select, create_engine
+from sqlalchemy import select
 from secrets import token_hex
 
 from ..db.session import get_session
@@ -75,4 +75,3 @@ def get_current_user():
     user_me_copy = user_me.copy()
     del user_me_copy['token']
     return user_me_copy
-

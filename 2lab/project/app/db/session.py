@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 
-engine = create_async_engine('sqlite+aiosqlite:///project/app/db/users.db')
+engine = create_async_engine('sqlite+aiosqlite:///2lab/project/app/db/users.db')
 new_session = async_sessionmaker(engine, expire_on_commit=False)
 
 

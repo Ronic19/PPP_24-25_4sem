@@ -12,7 +12,7 @@ def image_to_base64(path_to_image):
     return img_str
 
 
-def base64_to_image(img_str, path='project/app/services/decoded_img.png'):
+def base64_to_image(img_str, path='2lab/project/app/services/decoded_img.png'):
     img = Image.open(BytesIO(base64.b64decode(img_str)))
     img.save(path)
     return path
