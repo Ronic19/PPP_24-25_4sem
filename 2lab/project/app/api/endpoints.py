@@ -21,14 +21,6 @@ user_me = {
     }
 
 
-# @router.post("/setup_db")
-# async def setup_database():
-#     async with engine.begin() as conn:
-#         await conn.run_sync(Base.metadata.drop_all)
-#         await conn.run_sync(Base.metadata.create_all)
-#     return {'ok': True}
-
-
 # получение информации о всех пользователях
 @router.get("/users", tags=['Все пользователи 🕊️'])
 async def get_users(session: Session):
