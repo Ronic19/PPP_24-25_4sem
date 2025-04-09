@@ -11,7 +11,6 @@ from ..schemas.user_schema import UserLoginSchema
 
 router = APIRouter()
 
-
 Session = Annotated[AsyncSession, Depends(get_session)]
 
 user_me = {
@@ -26,7 +25,6 @@ user_me = {
 async def get_users(session: Session):
     query = select(UserModel)
     result = await session.execute(query)
-
     return result.scalars().all()
 
 
@@ -72,6 +70,6 @@ async def login(data: UserLoginSchema, session: Session):
 
 @router.get("/users/me", tags=['Текущий пользователь 🦩'])
 def get_current_user():
-    user_me_copy = user_me.copy()
-    del user_me_copy['token']
-    return user_me_copy
+    if user_me['id'] is None:
+        return {'result': 'Вы не авторизовались'}
+    return {'id': user_me['id'], 'email': user_me['email']}
