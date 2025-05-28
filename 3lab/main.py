@@ -4,58 +4,40 @@ from project.app.api.endpoints import router, user_me
 from project.app.services.bradley import bradley
 from project.app.models.users import Base
 from sqlalchemy import create_engine
-from pydantic import BaseModel, Field
-import websockets
-import asyncio
+import multiprocessing
+import subprocess
+import os
+import signal
+import atexit
+# from pydantic import BaseModel, Field
 
 
+# class ImageStr(BaseModel):
+#     img_str: str = Field(max_length=10000000)
 
-sync_engine = create_engine("sqlite:///project/app/db/users.db") 
+sync_engine = create_engine("sqlite:///3lab/project/app/db/users.db") 
 Base.metadata.create_all(sync_engine)
 
 app = FastAPI()
 app.include_router(router)
 
+def run_celery():
+    # Запускаем Celery worker
+    cmd = "celery -A 3lab.project.app.celery_tasks.tasks worker --loglevel=info"
+    subprocess.run(cmd, shell=True)
 
-# async def run_client():
-#     uri = "ws://localhost:8000/ws/123?token=your_token_here"
-#     async with websockets.connect(uri) as websocket:
-#         async def listen():
-#             while True:
-#                 response = await websocket.recv()
-#                 print("[NOTIFY]:", response)
-
-#         listener = asyncio.create_task(listen())
-
-#         while True:
-#             cmd = input(">>> ").strip().lower()
-
-#             if cmd == "exit":
-#                 break
-
-#             elif cmd == "login":
-#                 email = input("email: ")
-#                 password = input("password: ")
-
-#                 _, image_data = cmd.split(" ", 1)
-
-#                 await websocket.send(json.dumps({
-#                     "action": "start_task",
-#                     "image": image_data
-#                 }))
-
-#         listener.cancel()
-
-
-async def main():
-    print(f'Для регистрации введите singup')
-    print(f'Для входа введите login')
-    print(f'Для получения информации о текущем пользователе me')
-    print(f'Для бинаризации изображение введите task')
-    print(f'Для выхода введите exit')
-    # await run_client()
-
-
+def cleanup():
+    # Завершаем Celery процесс при выходе
+    if 'celery_process' in globals():
+        celery_process.terminate()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # Регистрируем функцию очистки
+    atexit.register(cleanup)
+    
+    # Запускаем Celery в отдельном процессе
+    celery_process = multiprocessing.Process(target=run_celery)
+    celery_process.start()
+    
+    # Запускаем FastAPI
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

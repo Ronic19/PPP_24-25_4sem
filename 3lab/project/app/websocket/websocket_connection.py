@@ -6,23 +6,25 @@ class ConnectionManager:
         self.active_connections: Dict[str, List[WebSocket]] = {}
 
 
-    async def connect(self, user_id: str, websocket: WebSocket):
+    async def connect(self, user_email: str, websocket: WebSocket):
         await websocket.accept()
-        if user_id not in self.active_connections:
-            self.active_connections[user_id] = []
-        self.active_connections[user_id].append(websocket)
+        if user_email not in self.active_connections:
+            self.active_connections[user_email] = []
+        self.active_connections[user_email].append(websocket)
         
 
-    def disconnect(self, user_id: str, websocket: WebSocket):
-        if user_id in self.active_connections:
-            self.active_connections[user_id].remove(websocket)
-            if not self.active_connections[user_id]:
-                del self.active_connections[user_id]
+    def disconnect(self, user_email: str, websocket: WebSocket):
+        if user_email in self.active_connections:
+            self.active_connections[user_email].remove(websocket)
+            if not self.active_connections[user_email]:
+                del self.active_connections[user_email]
 
 
-    async def send_message(self, user_id: str, message: dict):
-        if user_id in self.active_connections:
-            await self.active_connections[user_id].send_json(message)
+    async def send_message(self, user_email: str, message: dict):
+        if user_email in self.active_connections:
+            for con in self.active_connections.get(user_email):
+                await con.send_json(message)
 
 
 manager = ConnectionManager()
+

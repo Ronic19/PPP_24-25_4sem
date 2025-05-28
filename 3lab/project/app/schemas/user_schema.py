@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 
 
 class UserLoginSchema(BaseModel):
@@ -6,3 +6,6 @@ class UserLoginSchema(BaseModel):
     password: str
     model_config = ConfigDict(extra='forbid')
 
+
+class ImageStr(BaseModel):
+    img_str: str = Field(max_length=10000000)
