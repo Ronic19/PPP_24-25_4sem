@@ -3,10 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 from sqlalchemy import select
 from secrets import token_hex
-from project.app.services.bradley import bradley
-from project.app.schemas.user_schema import ImageStr
 import asyncio
-import time
 from pydantic import ValidationError
 
 from ..db.session import get_session
@@ -83,19 +80,15 @@ def get_current_user():
     return user_me_copy
 
 
-#############
-#############
-
 @router.websocket("/ws/{user_email}")
 async def websocket_endpoint(websocket: WebSocket, user_email: str, session: Session):
     await manager.connect(user_email, websocket)
     try:
         while True:
-            data = await websocket.receive_text()
-            data = data.split()
+            data_str = await websocket.receive_text()
+            data = data_str.split()
             if data[0] == 'login' and len(data) == 3:
 
-                ##########
                 try:
                     login_data = UserLoginSchema(
                         email=data[1],
@@ -103,7 +96,11 @@ async def websocket_endpoint(websocket: WebSocket, user_email: str, session: Ses
                     )
                     try:
                         await login(login_data, session)
-                        await manager.send_message(user_email, {"status": "SUCCESS", "email": user_me["email"], "token": user_me["token"]})
+                        await manager.send_message(user_email, {
+                            "status": "SUCCESS", 
+                            "email": user_me["email"], 
+                            "token": user_me["token"]
+                            })
                     except HTTPException as e:
                         await manager.send_message(user_email, {
                             "status": "ERROR",
@@ -114,10 +111,8 @@ async def websocket_endpoint(websocket: WebSocket, user_email: str, session: Ses
                         "status": "ERROR",
                         "detail": "некорректный email"
                     })
-                #######
 
             elif data[0] == 'signup' and len(data) == 3:
-
                 try:
                     login_data = UserLoginSchema(
                         email=data[1],
@@ -126,7 +121,11 @@ async def websocket_endpoint(websocket: WebSocket, user_email: str, session: Ses
 
                     try:
                         await sign_up(login_data, session)
-                        await manager.send_message(user_email, {"status": "SUCCESS", "email": user_me["email"], "token": user_me["token"]})
+                        await manager.send_message(user_email, {
+                            "status": "SUCCESS", 
+                            "email": user_me["email"], 
+                            "token": user_me["token"]
+                            })
                     except HTTPException as e:
                         await manager.send_message(user_email, {
                             "status": "ERROR",
@@ -139,22 +138,38 @@ async def websocket_endpoint(websocket: WebSocket, user_email: str, session: Ses
                         "detail": "некорректный email"
                     })
 
-
-            elif ''.join(data) == 'task':
-
+            elif data_str == 'task':
                 if user_me['email'] is None:
-                    await manager.send_message(user_email, {"ERROR": "Авторизуйтесь, пожалуйста"})
+                    await manager.send_message(user_email, {
+                        "status": "ERROR",
+                        "detail": "Авторизуйтесь, пожалуйста"})
                 else:
                     task = get_binary_image.delay()
-                    await manager.send_message(user_email, {"status": "STARTED", "task_id": task.id})
-                    result = task.get()
-                    for i in range(1, 11):
-                        await manager.send_message(user_email, {"status": "PROGRESS", "task_id": task.id, "progress": str(i * 10)})
-                    await manager.send_message(user_email, {"status": "SUCCESS", "task_id": task.id, "res": result})
+                    await manager.send_message(user_email, {
+                        "status": "STARTED", 
+                        "task_id": task.id
+                        })
 
+                    while not task.ready():
+                        if isinstance(task.info, dict):
+                            await manager.send_message(user_email, {
+                                "status": "PROGRESS", 
+                                "task_id": task.id, 
+                                "progress": task.info.get('progress')
+                                })
+                            await asyncio.sleep(0.5)
+                    await manager.send_message(user_email, {
+                        "status": "SUCCESS", 
+                        "task_id": task.id, 
+                        "res": task.get()
+                        })
+            
             else:
-                await manager.send_message(user_email, {"status": "ERROR", "detail": "неверная команда"})
-
+                await manager.send_message(user_email, {
+                    "status": "ERROR", 
+                    "detail": "неверная команда",
+                    "cmd": data_str
+                    })
     except WebSocketDisconnect:
         manager.disconnect(user_email, websocket)
 
